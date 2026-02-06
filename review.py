@@ -300,12 +300,20 @@ if __name__ == "__main__":
     
     # Gestion de la désinstallation
     if args.uninstall:
-        install_script = os.path.join(os.path.dirname(os.path.abspath(__file__)), "install.sh")
-        if os.path.exists(install_script):
-            os.execv("/bin/bash", ["/bin/bash", install_script, "--uninstall"])
-        else:
-            print_error("Script d'installation introuvable pour la désinstallation.")
-            sys.exit(1)
+        folder = os.path.dirname(os.path.abspath(__file__))
+        if os.name == 'nt':  # Windows
+            install_script = os.path.join(folder, "install.ps1")
+            if os.path.exists(install_script):
+                print_info("Lancement de la désinstallation Windows...")
+                os.system(f'powershell.exe -ExecutionPolicy Bypass -File "{install_script}" -Uninstall')
+                sys.exit(0)
+        else:  # Unix (Mac/Linux)
+            install_script = os.path.join(folder, "install.sh")
+            if os.path.exists(install_script):
+                os.execv("/bin/bash", ["/bin/bash", install_script, "--uninstall"])
+        
+        print_error("Script de désinstallation introuvable.")
+        sys.exit(1)
 
     target = args.target
     

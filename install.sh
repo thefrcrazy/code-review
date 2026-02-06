@@ -117,8 +117,9 @@ function install() {
             echo -e "${GREEN}✔${NC} MISTRAL_API_KEY détectée dans votre environnement."
             echo "MISTRAL_API_KEY=$MISTRAL_API_KEY" > "$ENV_FILE"
         else
-            echo -ne "${BLUE}➜${NC} Entrez votre clé ${BOLD}MISTRAL_API_KEY${NC} (laisser vide pour plus tard) : "
-            read USER_KEY < /dev/tty
+            echo -ne "${BLUE}➜${NC} Entrez votre clé ${BOLD}MISTRAL_API_KEY${NC} (saisie masquée) : "
+            read -rs USER_KEY < /dev/tty
+            echo "" # Nouvelle ligne après la saisie masquée
             if [ -n "$USER_KEY" ]; then
                 echo "MISTRAL_API_KEY=$USER_KEY" > "$ENV_FILE"
                 echo -e "${GREEN}✔${NC} Clé sauvegardée avec succès."

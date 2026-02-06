@@ -15,10 +15,14 @@ Un outil en ligne de commande puissant pour analyser instantanément n'importe q
 
 ### Méthode Automatique (Recommandée)
 
-Exécutez cette commande dans votre terminal. Un assistant interactif vous guidera (choix du dossier, nom de la commande, etc.).
-
+**Sur macOS / Linux :**
 ```bash
 curl -sSL https://raw.githubusercontent.com/thefrcrazy/code-review/main/install.sh | bash
+```
+
+**Sur Windows (PowerShell) :**
+```powershell
+iwr https://raw.githubusercontent.com/thefrcrazy/code-review/main/install.ps1 -useb | iex
 ```
 
 ### Méthode Manuelle
