@@ -11,6 +11,7 @@ import re
 import argparse
 import threading
 import itertools
+import getpass
 
 # --- COLORS & UI ---
 class Colors:
@@ -64,9 +65,10 @@ IGNORED_EXTENSIONS = {
 def load_env():
     env_vars = {}
     # Chemins possibles pour le .env
+    script_dir = os.path.dirname(os.path.realpath(__file__))
     possible_paths = [
         os.path.join(os.getcwd(), ".env"), # Dossier où on lance la commande
-        os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env") # Dossier du script
+        os.path.join(script_dir, ".env")   # Dossier REEL du script
     ]
     
     for path in possible_paths:
@@ -281,12 +283,27 @@ if __name__ == "__main__":
     api_url = os.environ.get("CODESTRAL_URL") or env.get("CODESTRAL_URL", "https://codestral.mistral.ai/v1/chat/completions")
 
     if not api_key:
-        print_error("MISTRAL_API_KEY non trouvée.")
-        print_info("Solutions :")
-        print_info(f"1. Obtenez une clé ici : {Colors.BOLD}https://console.mistral.ai/codestral{Colors.ENDC}")
-        print_info(f"2. Ajoutez la clé dans : {Colors.BOLD}{os.path.join(os.path.dirname(os.path.abspath(__file__)), '.env')}{Colors.ENDC}")
-        print_info(f"3. OU exportez la variable : {Colors.BOLD}export MISTRAL_API_KEY='votre_cle'{Colors.ENDC}")
-        sys.exit(1)
+        print_warning("MISTRAL_API_KEY non trouvée.")
+        choice = input(f"{Colors.CYAN}ℹ Voulez-vous configurer la clé maintenant ? (y/N) : {Colors.ENDC}")
+        if choice.lower() == 'y':
+            new_key = getpass.getpass(f"{Colors.BLUE}➜ Entrez votre clé MISTRAL_API_KEY (saisie masquée) : {Colors.ENDC}").strip()
+            if new_key:
+                script_dir = os.path.dirname(os.path.realpath(__file__))
+                env_path = os.path.join(script_dir, ".env")
+                with open(env_path, "w", encoding="utf-8") as f:
+                    f.write(f"MISTRAL_API_KEY={new_key}\n")
+                api_key = new_key
+                print_success(f"Clé configurée avec succès dans : {env_path}")
+            else:
+                print_error("Configuration annulée : clé vide.")
+                sys.exit(1)
+        else:
+            print_info("\nSolutions manuelles :")
+            print_info(f"1. Obtenez une clé ici : {Colors.BOLD}https://console.mistral.ai/codestral{Colors.ENDC}")
+            script_dir = os.path.dirname(os.path.realpath(__file__))
+            print_info(f"2. Ajoutez la clé dans : {Colors.BOLD}{os.path.join(script_dir, '.env')}{Colors.ENDC}")
+            print_info(f"3. OU exportez la variable : {Colors.BOLD}export MISTRAL_API_KEY='votre_cle'{Colors.ENDC}")
+            sys.exit(1)
 
     # --- ARGUMENT PARSING ---
     parser = argparse.ArgumentParser(description="Analyseur de code via IA (Codestral).")
