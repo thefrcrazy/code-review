@@ -72,29 +72,28 @@ function install() {
     
     # 1. Choix du dossier d'installation
     DEFAULT_DIR="$HOME/.code-review"
-    echo -e "\n${BOLD}Étape 1 : Emplacement des fichiers${NC}"
-    echo -ne "Où voulez-vous installer le script ? [$DEFAULT_DIR] : "
+    echo -e "\n${YELLOW}${BOLD}󰄵 Étape 1 :${NC} ${BOLD}Emplacement des fichiers${NC}"
+    echo -ne "${BLUE}➜${NC} Où voulez-vous installer le script ? [${CYAN}$DEFAULT_DIR${NC}] : "
     read INSTALL_DIR < /dev/tty
     INSTALL_DIR=${INSTALL_DIR:-$DEFAULT_DIR}
     
     # 2. Choix du nom de la commande
     DEFAULT_NAME="code-review"
-    echo -e "\n${BOLD}Étape 2 : Nom du raccourci${NC}"
-    echo -ne "Quel nom de commande voulez-vous utiliser ? [$DEFAULT_NAME] : "
+    echo -e "\n${YELLOW}${BOLD}󰄵 Étape 2 :${NC} ${BOLD}Nom du raccourci${NC}"
+    echo -ne "${BLUE}➜${NC} Quel nom de commande voulez-vous utiliser ? [${CYAN}$DEFAULT_NAME${NC}] : "
     read BIN_NAME < /dev/tty
     BIN_NAME=${BIN_NAME:-$DEFAULT_NAME}
     
-    echo -e "\n📦 Préparation de l'installation dans ${CYAN}$INSTALL_DIR${NC}..."
+    echo -e "\n${BLUE}📦${NC} Préparation de l'installation dans ${CYAN}$INSTALL_DIR${NC}..."
     mkdir -p "$INSTALL_DIR"
     
     # 3. Téléchargement
-    echo -e "📥 Téléchargement depuis GitHub..."
+    echo -e "${BLUE}📥${NC} Téléchargement depuis GitHub..."
     if [ -f "review.py" ]; then
         cp "review.py" "$INSTALL_DIR/review.py"
         cp "install.sh" "$INSTALL_DIR/install.sh"
     else
         curl -sSL "$RAW_URL" -o "$INSTALL_DIR/review.py"
-        # Télécharger aussi le script d'install pour la désinstallation future
         curl -sSL "https://raw.githubusercontent.com/$REPO_USER/$REPO_NAME/$BRANCH/install.sh" -o "$INSTALL_DIR/install.sh"
     fi
     
@@ -102,7 +101,7 @@ function install() {
     chmod +x "$INSTALL_DIR/install.sh"
     
     # 4. Lien symbolique
-    echo -e "🔗 Création du raccourci '${BIN_NAME}' dans /usr/local/bin (nécessite sudo)..."
+    echo -e "${BLUE}🔗${NC} Création du raccourci ${CYAN}'$BIN_NAME'${NC} dans ${BOLD}/usr/local/bin${NC} (nécessite sudo)..."
     if [ -L "/usr/local/bin/$BIN_NAME" ]; then
         sudo rm "/usr/local/bin/$BIN_NAME"
     fi
@@ -111,20 +110,20 @@ function install() {
     # 5. Configuration API
     ENV_FILE="$INSTALL_DIR/.env"
     if [ ! -f "$ENV_FILE" ]; then
-        echo -e "\n${YELLOW}${BOLD}Étape 3 : Configuration API (Mistral)${NC}"
-        echo -e "Obtenez une clé gratuite ici : ${BLUE}https://console.mistral.ai/codestral${NC}"
+        echo -e "\n${YELLOW}${BOLD}󰄵 Étape 3 :${NC} ${BOLD}Configuration API (Mistral)${NC}"
+        echo -e "${BLUE}ℹ${NC} Obtenez une clé gratuite ici : ${CYAN}${BOLD}https://console.mistral.ai/codestral${NC}"
         
         if [ -n "$MISTRAL_API_KEY" ]; then
-            echo "MISTRAL_API_KEY détectée dans votre environnement."
+            echo -e "${GREEN}✔${NC} MISTRAL_API_KEY détectée dans votre environnement."
             echo "MISTRAL_API_KEY=$MISTRAL_API_KEY" > "$ENV_FILE"
         else
-            echo -ne "Entrez votre clé MISTRAL_API_KEY (laisser vide pour plus tard) : "
+            echo -ne "${BLUE}➜${NC} Entrez votre clé ${BOLD}MISTRAL_API_KEY${NC} (laisser vide pour plus tard) : "
             read USER_KEY < /dev/tty
             if [ -n "$USER_KEY" ]; then
                 echo "MISTRAL_API_KEY=$USER_KEY" > "$ENV_FILE"
-                echo -e "${GREEN}✔ Clé sauvegardée.${NC}"
+                echo -e "${GREEN}✔${NC} Clé sauvegardée avec succès."
             else
-                echo "⚠️  N'oubliez pas de configurer votre clé plus tard dans $ENV_FILE"
+                echo -e "${YELLOW}⚠️${NC}  N'oubliez pas de configurer votre clé plus tard dans : ${BOLD}$ENV_FILE${NC}"
             fi
         fi
     else
