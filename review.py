@@ -46,6 +46,8 @@ def print_info(msg):
     print(f"{Colors.CYAN}ℹ {msg}{Colors.ENDC}")
 
 # --- CONFIGURATION ---
+CURRENT_VERSION = "1.0.0"
+GITHUB_REPO = "thefrcrazy/code-review"
 CHUNK_SIZE = 200 * 1024    # 200 Ko par chunk pour l'API
 DELAY_BETWEEN_CHUNKS = 2   # Pause de 2 secondes entre les appels pour éviter le rate limit
 
@@ -252,8 +254,10 @@ def colorize_markdown(text):
 def save_report(target, prompt, content):
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
     project_name = os.path.basename(os.path.abspath(target))
-    # On force la création à la racine de l'exécution actuelle
-    reviews_dir = os.path.join(os.getcwd(), "reviews")
+    
+    # On sauvegarde dans le dossier d'installation du script (ex: ~/.code-review/reviews/)
+    script_dir = os.path.dirname(os.path.realpath(__file__))
+    reviews_dir = os.path.join(script_dir, "reviews")
     
     if not os.path.exists(reviews_dir):
         os.makedirs(reviews_dir)
@@ -272,11 +276,81 @@ def save_report(target, prompt, content):
     with open(file_path, "w", encoding="utf-8") as f:
         f.write(report_content)
         
-    return file_path
+    return os.path.abspath(file_path)
+
+def check_version_comparison(current, latest):
+    c_parts = [int(x) for x in current.split('.')]
+    l_parts = [int(x) for x in latest.split('.')]
+    
+    for i in range(max(len(c_parts), len(l_parts))):
+        c = c_parts[i] if i < len(c_parts) else 0
+        l = l_parts[i] if i < len(l_parts) else 0
+        if l > c: return True
+        if l < c: return False
+    return False
+
+def update_self(latest_tag):
+    print_info(f"Mise à jour vers la version {Colors.BOLD}{latest_tag}{Colors.ENDC}...")
+    
+    # URL du fichier brut pour la version donnée
+    # On suppose que le tag est "vX.Y.Z" ou "X.Y.Z"
+    download_url = f"https://raw.githubusercontent.com/{GITHUB_REPO}/{latest_tag}/review.py"
+    
+    try:
+        script_path = os.path.realpath(__file__)
+        with urllib.request.urlopen(download_url) as response:
+            new_content = response.read().decode('utf-8')
+            
+        # Vérification basique
+        if "REVIEW CODE ANALYZER" not in new_content:
+            print_error("Le fichier téléchargé ne semble pas valide. Mise à jour annulée.")
+            return False
+            
+        # Sauvegarde temporaire
+        with open(script_path + ".tmp", "w", encoding="utf-8") as f:
+            f.write(new_content)
+            
+        # Remplacement
+        os.replace(script_path + ".tmp", script_path)
+        os.chmod(script_path, 0o755)
+        
+        print_success("Mise à jour terminée ! Veuillez relancer la commande.")
+        sys.exit(0)
+        
+    except Exception as e:
+        print_error(f"Échec de la mise à jour : {e}")
+        return False
+
+def check_for_updates(auto_update=False):
+    api_url = f"https://api.github.com/repos/{GITHUB_REPO}/releases/latest"
+    try:
+        # Timeout court pour ne pas bloquer le script trop longtemps
+        with urllib.request.urlopen(api_url, timeout=2) as response:
+            data = json.loads(response.read().decode())
+            latest_tag = data['tag_name'].lstrip('v')
+            
+            if check_version_comparison(CURRENT_VERSION, latest_tag):
+                print_warning(f"Une nouvelle version est disponible : {Colors.BOLD}{CURRENT_VERSION} -> {latest_tag}{Colors.ENDC}")
+                
+                if auto_update:
+                    update_self(data['tag_name'])
+                else:
+                    # Demander à l'utilisateur
+                    res = input(f"{Colors.CYAN}➜ Voulez-vous mettre à jour maintenant ? (y/N) : {Colors.ENDC}")
+                    if res.lower() == 'y':
+                        update_self(data['tag_name'])
+    except Exception:
+        # Silencieux si pas d'internet ou API limit
+        pass
 
 if __name__ == "__main__":
-    print_header("REVIEW CODE ANALYZER")
+    print_header(f"REVIEW CODE ANALYZER v{CURRENT_VERSION}")
     
+    # Vérification des mises à jour au lancement
+    # On ne le fait pas si l'utilisateur demande explicitement --uninstall ou --update
+    if "--uninstall" not in sys.argv:
+        check_for_updates(auto_update=False)
+
     env = load_env()
     # Priorité : Variable d'environnement système > Fichier .env
     api_key = os.environ.get("MISTRAL_API_KEY") or env.get("MISTRAL_API_KEY")
@@ -311,9 +385,18 @@ if __name__ == "__main__":
     parser.add_argument("prompt", nargs='?', default=None, help="Instruction spécifique pour l'IA")
     parser.add_argument("-l", "--lang", help="Langue de la réponse (ex: 'English', 'Spanish')")
     parser.add_argument("-v", "--verbose", action="store_true", help="Afficher tous les fichiers analysés")
+    parser.add_argument("--update", action="store_true", help="Mettre à jour l'outil vers la dernière version")
     parser.add_argument("--uninstall", action="store_true", help="Désinstaller l'outil")
     
     args = parser.parse_args()
+
+    # Mise à jour manuelle
+    if args.update:
+        print_info("Recherche de mises à jour...")
+        check_for_updates(auto_update=True)
+        # Si check_for_updates ne quitte pas (pas de maj), on informe
+        print_success("Vous utilisez déjà la dernière version.")
+        sys.exit(0)
     
     # Gestion de la désinstallation
     if args.uninstall:
@@ -448,7 +531,8 @@ if __name__ == "__main__":
 
         print_step("4/4", "Sauvegarde et Finalisation")
         saved_path = save_report(target, args.prompt, final_result)
-        print_success(f"Rapport sauvegardé dans : {Colors.BOLD}{saved_path}{Colors.ENDC}")
+        # Utilisation du préfixe file:// et soulignement pour maximiser la cliquabilité
+        print_success(f"Rapport sauvegardé dans : {Colors.UNDERLINE}file://{saved_path}{Colors.ENDC}")
         
     except Exception as e:
         print_error(f"FATAL ERROR: {e}")

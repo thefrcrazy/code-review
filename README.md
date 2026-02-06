@@ -7,9 +7,9 @@ Un outil en ligne de commande puissant pour analyser instantanément n'importe q
 - 🚀 **Analyse Multi-Parties** : Découpe automatiquement les projets volumineux pour respecter les limites de contexte.
 - 🎨 **UI Terminal Dynamique** : Barres de progression, spinners et rendu Markdown colorisé directement dans votre console.
 - 🛡️ **Support GUARD.md** : Personnalisez les instructions d'analyse par projet (ex: focus sécurité, performance, ou style de code).
-- 📂 **Rapports Automatiques** : Sauvegarde un rapport horodaté dans un dossier `reviews/` à la racine de votre répertoire d'exécution.
+- 📂 **Rapports Automatiques** : Sauvegarde un rapport horodaté dans le dossier `reviews/` de votre répertoire d'installation.
 - 🌍 **Support Multilingue** : Forcez la réponse dans la langue de votre choix avec l'option `-l`.
-- ⚡ **Ultra Léger** : Aucune dépendance externe lourde (utilise uniquement les bibliothèques standards Python).
+- 🔄 **Auto-Update** : L'outil détecte et installe les nouvelles versions via GitHub Releases.
 
 ## 🚀 Installation
 
@@ -60,6 +60,14 @@ code-review -v .
 code-review . "Cherche uniquement des failles SQL et XSS"
 ```
 
+## 🔄 Mise à jour
+
+L'outil vérifie automatiquement les mises à jour au lancement. Vous pouvez aussi forcer la mise à jour :
+
+```bash
+code-review --update
+```
+
 ## ⚙️ Configuration
 
 ### Le fichier `GUARD.md`
@@ -77,7 +85,7 @@ review_code/
 ├── install.sh        # Script d'installation interactif
 ├── .env              # Configuration des clés
 ├── GUARD.md          # Instructions globales par défaut
-└── reviews/          # Dossier de sortie des rapports (auto-généré au CWD)
+└── reviews/          # Dossier de sortie des rapports (centralisé dans l'install)
 ```
 
 ## 📄 Licence
