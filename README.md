@@ -31,10 +31,10 @@ curl -sSL https://raw.githubusercontent.com/thefrcrazy/code-review/main/install.
 ### Désinstallation
 
 ```bash
-# Via le script d'installation (si vous l'avez téléchargé)
-./install.sh --uninstall
+# La méthode la plus simple
+code-review --uninstall
 
-# Ou via le one-liner
+# Ou via le one-liner si vous n'avez plus la commande
 curl -sSL https://raw.githubusercontent.com/thefrcrazy/code-review/main/install.sh | bash -s -- --uninstall
 ```
 

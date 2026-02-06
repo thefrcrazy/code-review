@@ -294,9 +294,19 @@ if __name__ == "__main__":
     parser.add_argument("prompt", nargs='?', default=None, help="Instruction spécifique pour l'IA")
     parser.add_argument("-l", "--lang", help="Langue de la réponse (ex: 'English', 'Spanish')")
     parser.add_argument("-v", "--verbose", action="store_true", help="Afficher tous les fichiers analysés")
+    parser.add_argument("--uninstall", action="store_true", help="Désinstaller l'outil")
     
     args = parser.parse_args()
     
+    # Gestion de la désinstallation
+    if args.uninstall:
+        install_script = os.path.join(os.path.dirname(os.path.abspath(__file__)), "install.sh")
+        if os.path.exists(install_script):
+            os.execv("/bin/bash", ["/bin/bash", install_script, "--uninstall"])
+        else:
+            print_error("Script d'installation introuvable pour la désinstallation.")
+            sys.exit(1)
+
     target = args.target
     
     # Gestion du prompt via GUARD.md

@@ -11,6 +11,7 @@ GREEN='\033[0;32m'
 BLUE='\033[0;34m'
 RED='\033[0;31m'
 YELLOW='\033[1;33m'
+CYAN='\033[0;36m'
 BOLD='\033[1m'
 NC='\033[0m' # No Color
 
@@ -29,7 +30,8 @@ function print_banner() {
 function uninstall() {
     echo -e "${RED}${BOLD}🗑️  Désinstallation de Code Review${NC}"
     
-    read -p "Nom de la commande à supprimer [code-review] : " BIN_NAME
+    echo -ne "Nom de la commande à supprimer [code-review] : "
+    read BIN_NAME < /dev/tty
     BIN_NAME=${BIN_NAME:-code-review}
     
     BIN_PATH=$(which $BIN_NAME 2>/dev/null)
@@ -48,7 +50,8 @@ function uninstall() {
     echo -e "   - Le lien : $BIN_PATH"
     echo -e "   - Le dossier : $INSTALL_DIR"
     
-    read -p "Êtes-vous sûr ? (y/N) " confirm
+    echo -ne "Êtes-vous sûr ? (y/N) "
+    read confirm < /dev/tty
     if [[ $confirm != [yY] && $confirm != [yY][eE][sS] ]]; then
         echo "Annulation."
         exit 0
@@ -69,36 +72,37 @@ function install() {
     
     # 1. Choix du dossier d'installation
     DEFAULT_DIR="$HOME/.code-review"
-    read -p "Dossier d'installation [$DEFAULT_DIR] : " INSTALL_DIR
+    echo -e "\n${BOLD}Étape 1 : Emplacement des fichiers${NC}"
+    echo -ne "Où voulez-vous installer le script ? [$DEFAULT_DIR] : "
+    read INSTALL_DIR < /dev/tty
     INSTALL_DIR=${INSTALL_DIR:-$DEFAULT_DIR}
     
     # 2. Choix du nom de la commande
     DEFAULT_NAME="code-review"
-    read -p "Nom du raccourci commande [$DEFAULT_NAME] : " BIN_NAME
+    echo -e "\n${BOLD}Étape 2 : Nom du raccourci${NC}"
+    echo -ne "Quel nom de commande voulez-vous utiliser ? [$DEFAULT_NAME] : "
+    read BIN_NAME < /dev/tty
     BIN_NAME=${BIN_NAME:-$DEFAULT_NAME}
     
-    echo -e "\n📦 Préparation..."
+    echo -e "\n📦 Préparation de l'installation dans ${CYAN}$INSTALL_DIR${NC}..."
     mkdir -p "$INSTALL_DIR"
     
     # 3. Téléchargement
     echo -e "📥 Téléchargement depuis GitHub..."
-    # Note: On utilise curl pour télécharger. Si le repo n'est pas encore public/existant, cela échouera.
-    # Pour le test local, on copie si le fichier existe, sinon on tente le curl
     if [ -f "review.py" ]; then
         cp "review.py" "$INSTALL_DIR/review.py"
+        cp "install.sh" "$INSTALL_DIR/install.sh"
     else
-        HTTP_CODE=$(curl -sSL -w "%{http_code}" "$RAW_URL" -o "$INSTALL_DIR/review.py")
-        if [ "$HTTP_CODE" -ne 200 ]; then
-            echo -e "${RED}❌ Erreur de téléchargement (HTTP $HTTP_CODE). Vérifiez l'URL du repo.${NC}"
-            echo -e "URL tentée : $RAW_URL"
-            exit 1
-        fi
+        curl -sSL "$RAW_URL" -o "$INSTALL_DIR/review.py"
+        # Télécharger aussi le script d'install pour la désinstallation future
+        curl -sSL "https://raw.githubusercontent.com/$REPO_USER/$REPO_NAME/$BRANCH/install.sh" -o "$INSTALL_DIR/install.sh"
     fi
     
     chmod +x "$INSTALL_DIR/review.py"
+    chmod +x "$INSTALL_DIR/install.sh"
     
     # 4. Lien symbolique
-    echo -e "🔗 Création du raccourci '${BIN_NAME}' (nécessite sudo)..."
+    echo -e "🔗 Création du raccourci '${BIN_NAME}' dans /usr/local/bin (nécessite sudo)..."
     if [ -L "/usr/local/bin/$BIN_NAME" ]; then
         sudo rm "/usr/local/bin/$BIN_NAME"
     fi
@@ -107,18 +111,20 @@ function install() {
     # 5. Configuration API
     ENV_FILE="$INSTALL_DIR/.env"
     if [ ! -f "$ENV_FILE" ]; then
-        echo -e "\n${YELLOW}🔑 Configuration API (Mistral)${NC}"
-        echo -e "Obtenez une clé gratuite ici : ${BOLD}https://console.mistral.ai/codestral${NC}"
+        echo -e "\n${YELLOW}${BOLD}Étape 3 : Configuration API (Mistral)${NC}"
+        echo -e "Obtenez une clé gratuite ici : ${BLUE}https://console.mistral.ai/codestral${NC}"
+        
         if [ -n "$MISTRAL_API_KEY" ]; then
-            echo "MISTRAL_API_KEY détectée dans l'environnement."
+            echo "MISTRAL_API_KEY détectée dans votre environnement."
             echo "MISTRAL_API_KEY=$MISTRAL_API_KEY" > "$ENV_FILE"
         else
-            read -p "Entrez votre clé MISTRAL_API_KEY (laisser vide pour configurer plus tard) : " USER_KEY
+            echo -ne "Entrez votre clé MISTRAL_API_KEY (laisser vide pour plus tard) : "
+            read USER_KEY < /dev/tty
             if [ -n "$USER_KEY" ]; then
                 echo "MISTRAL_API_KEY=$USER_KEY" > "$ENV_FILE"
                 echo -e "${GREEN}✔ Clé sauvegardée.${NC}"
             else
-                echo "⚠️  N'oubliez pas de configurer votre clé plus tard."
+                echo "⚠️  N'oubliez pas de configurer votre clé plus tard dans $ENV_FILE"
             fi
         fi
     else
